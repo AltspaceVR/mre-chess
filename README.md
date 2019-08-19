@@ -8,7 +8,6 @@ MRE applications are Node.JS apps. Then run as a service in the cloud. When a co
 
 ## Supported platforms
 
-MRE applications run as Node.JS applications, and can manifest in the following clients:
 - [MRETestBed (Unity project)](https://github.com/microsoft/mixed-reality-extension-unity)
 - [AltspaceVR](https://altvr.com)
 - Any platform that implements the Mixed Reality Extension Runtime API (needs link)
