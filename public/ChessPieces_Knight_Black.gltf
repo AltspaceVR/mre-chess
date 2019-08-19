@@ -1,0 +1,138 @@
+{
+    "asset" : {
+        "generator" : "Khronos Blender glTF 2.0 I/O",
+        "version" : "2.0"
+    },
+    "scene" : 0,
+    "scenes" : [
+        {
+            "name" : "Scene",
+            "nodes" : [
+                0
+            ]
+        }
+    ],
+    "nodes" : [
+        {
+            "mesh" : 0,
+            "name" : "ChessPieces_Knight_Black"
+        }
+    ],
+    "materials" : [
+        {
+            "name" : "ChessPiecesBlack_MAT",
+            "pbrMetallicRoughness" : {
+                "baseColorTexture" : {
+                    "index" : 0,
+                    "texCoord" : 0
+                },
+                "metallicFactor" : 0,
+                "roughnessFactor" : 0.5
+            }
+        }
+    ],
+    "meshes" : [
+        {
+            "name" : "Cylinder.021",
+            "primitives" : [
+                {
+                    "attributes" : {
+                        "POSITION" : 0,
+                        "NORMAL" : 1,
+                        "TEXCOORD_0" : 2,
+                        "COLOR_0" : 3
+                    },
+                    "indices" : 4,
+                    "material" : 0
+                }
+            ]
+        }
+    ],
+    "textures" : [
+        {
+            "source" : 0
+        }
+    ],
+    "images" : [
+        {
+            "mimeType" : "image/png",
+            "name" : "ChessPiecesBlack_Basecol.png",
+            "uri" : "ChessPiecesBlack_Basecol.png"
+        }
+    ],
+    "accessors" : [
+        {
+            "bufferView" : 0,
+            "componentType" : 5126,
+            "count" : 1564,
+            "max" : [
+                0.013831225223839283,
+                0.06553494185209274,
+                0.022416742518544197
+            ],
+            "min" : [
+                -0.013831251300871372,
+                0,
+                -0.015952911227941513
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 1,
+            "componentType" : 5126,
+            "count" : 1564,
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 2,
+            "componentType" : 5126,
+            "count" : 1564,
+            "type" : "VEC2"
+        },
+        {
+            "bufferView" : 3,
+            "componentType" : 5126,
+            "count" : 1564,
+            "type" : "VEC4"
+        },
+        {
+            "bufferView" : 4,
+            "componentType" : 5123,
+            "count" : 3882,
+            "type" : "SCALAR"
+        }
+    ],
+    "bufferViews" : [
+        {
+            "buffer" : 0,
+            "byteLength" : 18768,
+            "byteOffset" : 0
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 18768,
+            "byteOffset" : 18768
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 12512,
+            "byteOffset" : 37536
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 25024,
+            "byteOffset" : 50048
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 7764,
+            "byteOffset" : 75072
+        }
+    ],
+    "buffers" : [
+        {
+            "byteLength" : 82836,
+            "uri" : "ChessPieces_Knight_Black.bin"
+        }
+    ]
+}
