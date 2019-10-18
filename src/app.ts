@@ -221,7 +221,7 @@ export default class ChessGame {
 	private createChessboard() {
 		const loads: Array<Promise<void>> = [];
 		this.chessboard = Actor.CreateFromPrefab(this.context, {
-			prefabId: this.preloads['chessboard'][0].prefab.id,
+			firstPrefabFrom: this.preloads['chessboard'],
 			actor: {
 				name: "chessboard",
 				parentId: this.sceneRoot.id,
@@ -277,9 +277,8 @@ export default class ChessGame {
 				const name = `${square.piece.side.name}-${square.piece.type}`;
 				const position = new Vector3();
 				position.copy(this.coordinate(square));
-				const prefab = this.preloads[`${square.piece.side.name}-${square.piece.type}`][0].prefab;
 				const actor = Actor.CreateFromPrefab(this.context, {
-					prefabId: prefab.id,
+					firstPrefabFrom: this.preloads[`${square.piece.side.name}-${square.piece.type}`],
 					actor: {
 						name,
 						parentId: this.boardOffset.id,
@@ -301,9 +300,8 @@ export default class ChessGame {
 			const position = new Vector3();
 			position.copy(this.coordinate(square));
 			position.y = 1000;
-			const prefab = this.preloads['move-marker'][0].prefab;
 			const actor = Actor.CreateFromPrefab(this.context, {
-				prefabId: prefab.id,
+				firstPrefabFrom: this.preloads['move-marker'],
 				actor: {
 					name: 'move-marker',
 					parentId: this.boardOffset.id,
@@ -317,9 +315,8 @@ export default class ChessGame {
 	}
 
 	private createCheckMarker() {
-		const prefab = this.preloads['check-marker'][0].prefab;
 		const actor = Actor.CreateFromPrefab(this.context, {
-			prefabId: prefab.id,
+			firstPrefabFrom: this.preloads['check-marker'],
 			actor: {
 				name: 'check-marker',
 				parentId: this.boardOffset.id,
