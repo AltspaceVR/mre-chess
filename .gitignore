@@ -38,6 +38,7 @@ jspm_packages/
 
 # TypeScript v1 declaration files
 typings/
+tsconfig.tsbuildinfo
 
 # Optional npm cache directory
 .npm
@@ -73,3 +74,5 @@ app.zip
 
 # .editorconfig files. This should be individually customizable.
 .editorconfig
+
+Dockerfile
