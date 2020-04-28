@@ -4,6 +4,7 @@ WORKDIR /opt/mre
 COPY package*.json ./
 RUN ["npm", "install", "--unsafe-perm"]
 
+COPY .eslintrc.js ./
 COPY tsconfig.json ./
 COPY src ./src/
 RUN ["npm", "run", "build"]
