@@ -36,7 +36,7 @@ type Piece = {
 	moveCount: number;
 	notation: string;
 	side: Side;
-	type: string;
+	type: string; 	
 	actor: Actor;
 };
 
@@ -147,24 +147,8 @@ export default class ChessGame {
 		this.game = chess.createSimple();
 		// Hook the 'check' event.
 		this.game.on('check', (attack: Attack) => this.onCheck(attack));
-
-		// Load all model prefabs.
-		await this.preloadAllModels();
-
-		// Create all the actors.
-		await Promise.all([
-			this.createRootObject(),
-			this.createChessboard(),
-			this.createChessPieces(),
-			this.createMoveMarkers(),
-			this.createCheckMarker(),
-			this.createJoinButtons(),
-		]);
-
-		// Hook up event handlers.
-		// Do this after all actors are loaded because the event handlers themselves reference other actors in the
-		// scene. It simplifies handler code if we can assume that the actors are loaded.
-		this.addEventHandlers();
+		// Creat actors and hook events.
+		await this.loadActorsAndEvents();
 	}
 
 	private userJoined = (user: User) => {
@@ -204,6 +188,31 @@ export default class ChessGame {
 		preloads.push(this.assets.loadGltf(`${this.baseUrl}/UI_Glow_Orange.gltf`, 'mesh')
 			.then(value => this.preloads['check-marker'] = value));
 		await Promise.all(preloads);
+	}
+
+	private async loadActorsAndEvents() {
+
+		if (this.sceneRoot) {
+			//destroy scene root to avoid duplicating assets
+			this.sceneRoot.destroy();
+		}
+		
+		await this.preloadAllModels();
+
+		// Create all the actors.
+		await Promise.all([
+			this.createRootObject(),
+			this.createChessboard(),
+			this.createChessPieces(),
+			this.createMoveMarkers(),
+			this.createCheckMarker(),
+			this.createJoinButtons(),
+		]);
+
+		// Hook up event handlers.
+		// Do this after all actors are loaded because the event handlers themselves reference other actors in the
+		// scene. It simplifies handler code if we can assume that the actors are loaded.
+		this.addEventHandlers();
 	}
 
 	private createRootObject() {
@@ -374,7 +383,7 @@ export default class ChessGame {
 		this.showMoveMarkers(actor);
 	}
 
-	private onDragEnd(userId: Guid, actor: Actor) {
+	private async onDragEnd(userId: Guid, actor: Actor) {
 		this.hideMoveMarkers();
 		this.hideCheckMarker();
 		const status = this.game.getStatus();
@@ -390,7 +399,15 @@ export default class ChessGame {
 					.filter(item => item.file === dropSquare.file && item.rank === dropSquare.rank).shift();
 				if (destSquare) {
 					// Move the piece.
-					this.game.move(move.src, destSquare);
+					if (move.src.piece.type === 'pawn' && destSquare.rank === 8 || destSquare.rank === 1) {
+						//Auto promote pawn to queen
+						this.game.move(move.src, destSquare, 'Q');
+						//reload actors and events to represent new board state
+						await this.loadActorsAndEvents();
+					} else {
+						this.game.move(move.src, destSquare);
+					}
+					
 				}
 			}
 		}
