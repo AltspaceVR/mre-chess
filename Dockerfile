@@ -1,6 +1,9 @@
 FROM node:10.16-alpine
 WORKDIR /opt/mre
 
+ENV PORT=80
+ENV BASE_URL=https://mre-chess.openode.io/
+
 COPY package*.json ./
 RUN ["npm", "install", "--unsafe-perm"]
 

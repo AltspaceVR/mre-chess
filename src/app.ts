@@ -147,8 +147,23 @@ export default class ChessGame {
 		this.game = chess.createSimple();
 		// Hook the 'check' event.
 		this.game.on('check', (attack: Attack) => this.onCheck(attack));
-		// Creat actors and hook events.
-		await this.loadActorsAndEvents();
+		
+		await this.preloadAllModels();
+
+		// Create all the actors.
+		await Promise.all([
+			this.createRootObject(),
+			this.createChessboard(),
+			this.createChessPieces(),
+			this.createMoveMarkers(),
+			this.createCheckMarker(),
+			this.createJoinButtons(),
+		]);
+
+		// Hook up event handlers.
+		// Do this after all actors are loaded because the event handlers themselves reference other actors in the
+		// scene. It simplifies handler code if we can assume that the actors are loaded.
+		this.addEventHandlers();
 	}
 
 	private userJoined = (user: User) => {
@@ -218,7 +233,7 @@ export default class ChessGame {
 	private createRootObject() {
 		// Create a root actor everything gets parented to. Offset from origin so the chess board
 		// is centered on it.
-		this.sceneRoot = Actor.CreateEmpty(
+		this.sceneRoot = Actor.Create(
 			this.context,
 			{
 				actor: {
@@ -243,7 +258,7 @@ export default class ChessGame {
 		});
 		loads.push(this.chessboard.created());
 
-		this.boardOffset = Actor.CreateEmpty(this.context, {
+		this.boardOffset = Actor.Create(this.context, {
 			actor: {
 				name: "board-offset",
 				parentId: this.sceneRoot.id,
@@ -260,7 +275,7 @@ export default class ChessGame {
 		for (const file of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']) {
 			for (const rank of [1, 2, 3, 4, 5, 6, 7, 8]) {
 				const position = this.coordinate({ file, rank });
-				const actor = Actor.CreateEmpty(this.context, {
+				const actor = Actor.Create(this.context, {
 					actor: {
 						name: `square-${file}${rank}`,
 						parentId: this.boardOffset.id,
@@ -406,24 +421,23 @@ export default class ChessGame {
 						await this.loadActorsAndEvents();
 					} else {
 						this.game.move(move.src, destSquare);
-					}
-					
+						// Get populated squares for new board state.
+						const newStatus = this.game.getStatus();
+						const newBoard = this.readOccupiedBoard(newStatus);
+						// Move pieces to match new positions on board.
+						this.animateActorMovements(prevBoard, newBoard);
+						if (newStatus.isCheckmate) {
+							// console.log("checkmate");
+						} else if (newStatus.isCheck) {
+							//
+						} else if (newStatus.isRepetition) {
+							//
+						} else if (newStatus.isStalemate) {
+							//
+						}	
+					}					
 				}
 			}
-		}
-		// Get populated squares for new board state.
-		const newStatus = this.game.getStatus();
-		const newBoard = this.readOccupiedBoard(newStatus);
-		// Move pieces to match new positions on board.
-		this.animateActorMovements(prevBoard, newBoard);
-		if (newStatus.isCheckmate) {
-			// console.log("checkmate");
-		} else if (newStatus.isCheck) {
-			//
-		} else if (newStatus.isRepetition) {
-			//
-		} else if (newStatus.isStalemate) {
-			//
 		}
 	}
 
