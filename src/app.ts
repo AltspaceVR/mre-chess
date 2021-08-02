@@ -98,7 +98,7 @@ type SquareActor = Actor & Coordinate;
 const modelConfigs: { [id: string]: { [id: string]: ModelConfig } } = {
 	black: {
 		rook: { rotation: Quaternion.Identity() },
-		knight: { rotation: Quaternion.Identity() },
+		knight: { rotation: Quaternion.Identity() }, 
 		bishop: { rotation: Quaternion.Identity() },
 		queen: { rotation: Quaternion.Identity() },
 		king: { rotation: Quaternion.Identity() },
@@ -166,7 +166,7 @@ export default class ChessGame {
 		// scene. It simplifies handler code if we can assume that the actors are loaded.
 		this.addEventHandlers();
 	}
-
+	
 	private userJoined = (user: User) => {
 		// console.log(user.properties);
 	}
@@ -205,7 +205,7 @@ export default class ChessGame {
 			.then(value => this.preloads['check-marker'] = value));
 		await Promise.all(preloads);
 	}
-
+	
 	private createRootObject() {
 		// Create a root actor everything gets parented to. Offset from origin so the chess board
 		// is centered on it.
@@ -339,7 +339,7 @@ export default class ChessGame {
 	private createJoinButtons() {
 
 	}
-
+	
 	private addEventHandlers() {
 		const status = this.game.getStatus();
 		// Add input handlers to chess pieces.
@@ -353,7 +353,7 @@ export default class ChessGame {
 			actor.grabbable = true;
 		});
 	}
-
+	
 	private nearestSquare(position: Vector3): Square {
 		const distance = (square: Square) => Vector3.Distance(
 			new Vector3(position.x, 0, position.z),
@@ -374,7 +374,7 @@ export default class ChessGame {
 		this.showMoveMarkers(actor);
 	}
 
-	private onDragEnd(userId: Guid, actor: Actor) {
+	private async onDragEnd(userId: Guid, actor: Actor) {
 		this.hideMoveMarkers();
 		this.hideCheckMarker();
 		const status = this.game.getStatus();
@@ -390,7 +390,16 @@ export default class ChessGame {
 					.filter(item => item.file === dropSquare.file && item.rank === dropSquare.rank).shift();
 				if (destSquare) {
 					// Move the piece.
-					this.game.move(move.src, destSquare);
+					if (move.src.piece.type === 'pawn' && (destSquare.rank === 8 || destSquare.rank === 1)) {
+						//Auto promote pawn to queen
+						this.game.move(move.src,destSquare, "Q");
+						
+						const newActor = this.promoteChessPiece(userId, actor, destSquare);
+						await Promise.resolve(newActor);
+						actor = newActor;
+					} else {
+						this.game.move(move.src, destSquare);	
+					}
 				}
 			}
 		}
@@ -409,7 +418,49 @@ export default class ChessGame {
 			//
 		}
 	}
-
+	
+	private promoteChessPiece(userId: Guid, actor: Actor, destSquare: Square) {
+		const newPieceActor = this.createSingleChessPiece(destSquare);
+		// this.createSingleChessPiece(destSquare);
+		// const newMoveMarkers = this.createMoveMarkersForSingleChessPiece(destSquare);
+		// this.addEventHandlersToSingleChessPiece(this.promotedPieceActor);
+		this.addEventHandlersToSingleChessPiece(newPieceActor);
+		
+		return newPieceActor;
+	}
+	
+	private createSingleChessPiece(square: Square) {
+		const side = modelConfigs[square.piece.side.name];
+		const info = side[square.piece.type];
+		const name = `${square.piece.side.name}-${square.piece.type}`;
+		const position = new Vector3();
+		position.copy(this.coordinate(square));
+		const prefab = this.preloads[`${square.piece.side.name}-${square.piece.type}`]
+			.filter(asset => asset.prefab)[0].prefab;
+		const actor = Actor.CreateFromPrefab(this.context, {
+			prefabId: prefab.id,
+			actor: {
+				name,
+				parentId: this.boardOffset.id,
+				transform: { local: { position, rotation: info.rotation } },
+				subscriptions: ['transform']
+			}
+		});
+		square.piece.actor = actor;
+		return actor;
+	}
+	
+	private async addEventHandlersToSingleChessPiece(actor: Actor) {
+		await Promise.resolve(actor.created());
+		// Add input handlers to chess piece
+		const button = actor.setBehavior(ButtonBehavior);
+		button.onHover('enter', (user) => this.startHoverPiece(user.id, actor));
+		button.onHover('exit', (user) => this.stopHoverPiece(user.id, actor));
+		actor.onGrab('begin', (user) => this.onDragBegin(user.id, actor));
+		actor.onGrab('end', (user) => this.onDragEnd(user.id, actor));
+		actor.grabbable = true;
+	}
+	
 	private startHoverPiece(userId: Guid, actor: Actor) {
 		this.showMoveMarkers(actor);
 	}
