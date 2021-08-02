@@ -132,6 +132,7 @@ export default class ChessGame {
 	private checkMarker: Actor;
 	private assets: AssetContainer;
 	private preloads: { [id: string]: Asset[] } = {};
+	private resetButton: Actor;
 
 	constructor(private context: Context, private baseUrl: string) {
 		this.assets = new AssetContainer(this.context);
@@ -159,6 +160,7 @@ export default class ChessGame {
 			this.createMoveMarkers(),
 			this.createCheckMarker(),
 			this.createJoinButtons(),
+			this.createResetButton()
 		]);
 
 		// Hook up event handlers.
@@ -204,6 +206,32 @@ export default class ChessGame {
 		preloads.push(this.assets.loadGltf(`${this.baseUrl}/UI_Glow_Orange.gltf`, 'mesh')
 			.then(value => this.preloads['check-marker'] = value));
 		await Promise.all(preloads);
+	}
+	
+	private async loadActorsAndEvents() {
+
+		if (this.sceneRoot) {
+			//destroy scene root to avoid duplicating assets
+			this.sceneRoot.destroy();
+		}
+		
+		await this.preloadAllModels();
+
+		// Create all the actors.
+		await Promise.all([
+			this.createRootObject(),
+			this.createChessboard(),
+			this.createChessPieces(),
+			this.createMoveMarkers(),
+			this.createCheckMarker(),
+			this.createJoinButtons(),
+			this.createResetButton()
+		]);
+
+		// Hook up event handlers.
+		// Do this after all actors are loaded because the event handlers themselves reference other actors in the
+		// scene. It simplifies handler code if we can assume that the actors are loaded.
+		this.addEventHandlers();
 	}
 	
 	private createRootObject() {
@@ -340,6 +368,24 @@ export default class ChessGame {
 
 	}
 	
+	private createResetButton() {
+		const position = new Vector3();
+		position.copy(this.boardOffset.transform.local.position)
+		position.x = .1;
+		position.z = -.135;
+		const prefab = this.preloads['move-marker'].filter(asset => asset.prefab)[0].prefab;
+		const actor = Actor.CreateFromPrefab(this.context, {
+			prefabId: prefab.id,
+			actor: {
+				name: 'reset-button',
+				parentId: this.boardOffset.id,
+				transform: { local: { position } }
+			}
+		});
+		this.resetButton = actor;
+		return actor.created();
+	}
+	
 	private addEventHandlers() {
 		const status = this.game.getStatus();
 		// Add input handlers to chess pieces.
@@ -351,7 +397,15 @@ export default class ChessGame {
 			actor.onGrab('begin', (user) => this.onDragBegin(user.id, actor));
 			actor.onGrab('end', (user) => this.onDragEnd(user.id, actor));
 			actor.grabbable = true;
-		});
+		});this.addResetButtonEventHandlers();
+	}
+	
+	
+	private addResetButtonEventHandlers() {
+		const actor = this.resetButton;
+		const button = actor.setBehavior(ButtonBehavior);
+		
+		button.onClick((user) => this.onResetButtonClicked(user.id, actor));
 	}
 	
 	private nearestSquare(position: Vector3): Square {
@@ -364,6 +418,16 @@ export default class ChessGame {
 		const status = this.game.getStatus();
 		const sorted = [...status.board.squares].sort((a, b) => distance(a) - distance(b));
 		return sorted.shift();
+	}
+	
+	private onResetButtonClicked(userId: Guid, actor: Actor) {
+		this.resetGame();
+	}
+	
+	private resetGame() {
+		this.game = chess.createSimple();
+		this.game.on('check', (attack: Attack) => this.onCheck(attack));
+		this.loadActorsAndEvents();
 	}
 
 	private onCheck(attack: Attack) {
@@ -421,9 +485,6 @@ export default class ChessGame {
 	
 	private promoteChessPiece(userId: Guid, actor: Actor, destSquare: Square) {
 		const newPieceActor = this.createSingleChessPiece(destSquare);
-		// this.createSingleChessPiece(destSquare);
-		// const newMoveMarkers = this.createMoveMarkersForSingleChessPiece(destSquare);
-		// this.addEventHandlersToSingleChessPiece(this.promotedPieceActor);
 		this.addEventHandlersToSingleChessPiece(newPieceActor);
 		
 		return newPieceActor;
