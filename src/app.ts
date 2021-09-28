@@ -98,7 +98,7 @@ type SquareActor = Actor & Coordinate;
 const modelConfigs: { [id: string]: { [id: string]: ModelConfig } } = {
 	black: {
 		rook: { rotation: Quaternion.Identity() },
-		knight: { rotation: Quaternion.Identity() }, 
+		knight: { rotation: Quaternion.Identity() },
 		bishop: { rotation: Quaternion.Identity() },
 		queen: { rotation: Quaternion.Identity() },
 		king: { rotation: Quaternion.Identity() },
@@ -209,14 +209,12 @@ export default class ChessGame {
 	}
 	
 	private async loadActorsAndEvents() {
-
 		if (this.sceneRoot) {
 			//destroy scene root to avoid duplicating assets
 			this.sceneRoot.destroy();
 		}
-		
 		await this.preloadAllModels();
-
+		
 		// Create all the actors.
 		await Promise.all([
 			this.createRootObject(),
@@ -399,7 +397,6 @@ export default class ChessGame {
 			actor.grabbable = true;
 		});this.addResetButtonEventHandlers();
 	}
-	
 	
 	private addResetButtonEventHandlers() {
 		const actor = this.resetButton;
