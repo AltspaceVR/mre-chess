@@ -395,7 +395,8 @@ export default class ChessGame {
 			actor.onGrab('begin', (user) => this.onDragBegin(user.id, actor));
 			actor.onGrab('end', (user) => this.onDragEnd(user.id, actor));
 			actor.grabbable = true;
-		});this.addResetButtonEventHandlers();
+		});
+		this.addResetButtonEventHandlers();
 	}
 	
 	private addResetButtonEventHandlers() {
