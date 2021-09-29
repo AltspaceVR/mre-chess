@@ -168,7 +168,7 @@ export default class ChessGame {
 		// scene. It simplifies handler code if we can assume that the actors are loaded.
 		this.addEventHandlers();
 	}
-	
+
 	private userJoined = (user: User) => {
 		// console.log(user.properties);
 	}
@@ -436,7 +436,7 @@ export default class ChessGame {
 		this.showMoveMarkers(actor);
 	}
 
-	private async onDragEnd(userId: Guid, actor: Actor) {
+	private onDragEnd(userId: Guid, actor: Actor) {
 		this.hideMoveMarkers();
 		this.hideCheckMarker();
 		const status = this.game.getStatus();
@@ -457,7 +457,6 @@ export default class ChessGame {
 						this.game.move(move.src,destSquare, "Q");
 						
 						const newActor = this.promoteChessPiece(userId, actor, destSquare);
-						await Promise.resolve(newActor);
 						actor = newActor;
 					} else {
 						this.game.move(move.src, destSquare);	
