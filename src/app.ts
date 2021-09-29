@@ -130,7 +130,6 @@ export default class ChessGame {
 	private boardOffset: Actor;
 	private chessboard: Actor;
 	private checkMarker: Actor;
-	private resetButton: Actor;
 	private assets: AssetContainer;
 	private preloads: { [id: string]: Asset[] } = {};
 
@@ -143,8 +142,29 @@ export default class ChessGame {
 	/**
 	 * Once the context is "started", initialize the app.
 	 */
-	private started = () => {
-		this.resetGame();
+	private started = async () => {
+		// Create the chess game.
+		this.game = chess.createSimple();
+		// Hook the 'check' event.
+		this.game.on('check', (attack: Attack) => this.onCheck(attack));
+
+		// Load all model prefabs.
+		await this.preloadAllModels();
+
+		// Create all the actors.
+		await Promise.all([
+			this.createRootObject(),
+			this.createChessboard(),
+			this.createChessPieces(),
+			this.createMoveMarkers(),
+			this.createCheckMarker(),
+			this.createJoinButtons(),
+		]);
+
+		// Hook up event handlers.
+		// Do this after all actors are loaded because the event handlers themselves reference other actors in the
+		// scene. It simplifies handler code if we can assume that the actors are loaded.
+		this.addEventHandlers();
 	}
 
 	private userJoined = (user: User) => {
@@ -184,36 +204,6 @@ export default class ChessGame {
 		preloads.push(this.assets.loadGltf(`${this.baseUrl}/UI_Glow_Orange.gltf`, 'mesh')
 			.then(value => this.preloads['check-marker'] = value));
 		await Promise.all(preloads);
-	}
-
-	private resetGame() {
-		this.game = chess.createSimple();
-		this.game.on('check', (attack: Attack) => this.onCheck(attack));
-		this.loadActorsAndEvents();
-	}
-
-	private async loadActorsAndEvents() {
-		if (this.sceneRoot) {
-			//destroy scene root to avoid duplicating assets
-			this.sceneRoot.destroy();
-		}
-		await this.preloadAllModels();
-
-		// Create all the actors.
-		await Promise.all([
-			this.createRootObject(),
-			this.createChessboard(),
-			this.createChessPieces(),
-			this.createMoveMarkers(),
-			this.createCheckMarker(),
-			this.createJoinButtons(),
-			this.createResetButton()
-		]);
-
-		// Hook up event handlers.
-		// Do this after all actors are loaded because the event handlers themselves reference other actors in the
-		// scene. It simplifies handler code if we can assume that the actors are loaded.
-		this.addEventHandlers();
 	}
 
 	private createRootObject() {
@@ -350,24 +340,6 @@ export default class ChessGame {
 
 	}
 
-	private createResetButton() {
-		const position = new Vector3();
-		position.copy(this.boardOffset.transform.local.position)
-		position.x = .1;
-		position.z = -.135;
-		const prefab = this.preloads['move-marker'].filter(asset => asset.prefab)[0].prefab;
-		const actor = Actor.CreateFromPrefab(this.context, {
-			prefabId: prefab.id,
-			actor: {
-				name: 'reset-button',
-				parentId: this.boardOffset.id,
-				transform: { local: { position } }
-			}
-		});
-		this.resetButton = actor;
-		return actor.created();
-	}
-
 	private addEventHandlers() {
 		const status = this.game.getStatus();
 		// Add input handlers to chess pieces.
@@ -380,14 +352,6 @@ export default class ChessGame {
 			actor.onGrab('end', (user) => this.onDragEnd(user.id, actor));
 			actor.grabbable = true;
 		});
-		this.addResetButtonEventHandlers();
-	}
-
-	private addResetButtonEventHandlers() {
-		const actor = this.resetButton;
-		const button = actor.setBehavior(ButtonBehavior);
-
-		button.onClick((user) => this.onResetButtonClicked(user.id, actor));
 	}
 
 	private nearestSquare(position: Vector3): Square {
@@ -400,10 +364,6 @@ export default class ChessGame {
 		const status = this.game.getStatus();
 		const sorted = [...status.board.squares].sort((a, b) => distance(a) - distance(b));
 		return sorted.shift();
-	}
-
-	private onResetButtonClicked(userId: Guid, actor: Actor) {
-		this.resetGame();
 	}
 
 	private onCheck(attack: Attack) {
@@ -430,15 +390,7 @@ export default class ChessGame {
 					.filter(item => item.file === dropSquare.file && item.rank === dropSquare.rank).shift();
 				if (destSquare) {
 					// Move the piece.
-					if (move.src.piece.type === 'pawn' && (destSquare.rank === 8 || destSquare.rank === 1)) {
-						//Auto promote pawn to queen
-						this.game.move(move.src, destSquare, "Q");
-
-						const newActor = this.promoteChessPiece(userId, actor, destSquare);
-						actor = newActor;
-					} else {
-						this.game.move(move.src, destSquare);
-					}
+					this.game.move(move.src, destSquare);
 				}
 			}
 		}
@@ -456,45 +408,6 @@ export default class ChessGame {
 		} else if (newStatus.isStalemate) {
 			//
 		}
-	}
-
-	private promoteChessPiece(userId: Guid, actor: Actor, destSquare: Square) {
-		const newPieceActor = this.createSingleChessPiece(destSquare);
-		this.addEventHandlersToSingleChessPiece(newPieceActor);
-
-		return newPieceActor;
-	}
-
-	private createSingleChessPiece(square: Square) {
-		const side = modelConfigs[square.piece.side.name];
-		const info = side[square.piece.type];
-		const name = `${square.piece.side.name}-${square.piece.type}`;
-		const position = new Vector3();
-		position.copy(this.coordinate(square));
-		const prefab = this.preloads[`${square.piece.side.name}-${square.piece.type}`]
-			.filter(asset => asset.prefab)[0].prefab;
-		const actor = Actor.CreateFromPrefab(this.context, {
-			prefabId: prefab.id,
-			actor: {
-				name,
-				parentId: this.boardOffset.id,
-				transform: { local: { position, rotation: info.rotation } },
-				subscriptions: ['transform']
-			}
-		});
-		square.piece.actor = actor;
-		return actor;
-	}
-
-	private async addEventHandlersToSingleChessPiece(actor: Actor) {
-		await Promise.resolve(actor.created());
-		// Add input handlers to chess piece
-		const button = actor.setBehavior(ButtonBehavior);
-		button.onHover('enter', (user) => this.startHoverPiece(user.id, actor));
-		button.onHover('exit', (user) => this.stopHoverPiece(user.id, actor));
-		actor.onGrab('begin', (user) => this.onDragBegin(user.id, actor));
-		actor.onGrab('end', (user) => this.onDragEnd(user.id, actor));
-		actor.grabbable = true;
 	}
 
 	private startHoverPiece(userId: Guid, actor: Actor) {
