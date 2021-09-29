@@ -143,30 +143,8 @@ export default class ChessGame {
 	/**
 	 * Once the context is "started", initialize the app.
 	 */
-	private started = async () => {
-		// Create the chess game.
-		this.game = chess.createSimple();
-		// Hook the 'check' event.
-		this.game.on('check', (attack: Attack) => this.onCheck(attack));
-
-		// Load all model prefabs.
-		await this.preloadAllModels();
-
-		// Create all the actors.
-		await Promise.all([
-			this.createRootObject(),
-			this.createChessboard(),
-			this.createChessPieces(),
-			this.createMoveMarkers(),
-			this.createCheckMarker(),
-			this.createJoinButtons(),
-			this.createResetButton()
-		]);
-
-		// Hook up event handlers.
-		// Do this after all actors are loaded because the event handlers themselves reference other actors in the
-		// scene. It simplifies handler code if we can assume that the actors are loaded.
-		this.addEventHandlers();
+	private started = () => {
+		this.resetGame();
 	}
 
 	private userJoined = (user: User) => {
@@ -206,6 +184,12 @@ export default class ChessGame {
 		preloads.push(this.assets.loadGltf(`${this.baseUrl}/UI_Glow_Orange.gltf`, 'mesh')
 			.then(value => this.preloads['check-marker'] = value));
 		await Promise.all(preloads);
+	}
+
+	private resetGame() {
+		this.game = chess.createSimple();
+		this.game.on('check', (attack: Attack) => this.onCheck(attack));
+		this.loadActorsAndEvents();
 	}
 	
 	private async loadActorsAndEvents() {
@@ -420,12 +404,6 @@ export default class ChessGame {
 	
 	private onResetButtonClicked(userId: Guid, actor: Actor) {
 		this.resetGame();
-	}
-	
-	private resetGame() {
-		this.game = chess.createSimple();
-		this.game.on('check', (attack: Attack) => this.onCheck(attack));
-		this.loadActorsAndEvents();
 	}
 
 	private onCheck(attack: Attack) {
