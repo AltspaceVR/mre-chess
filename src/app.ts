@@ -130,9 +130,9 @@ export default class ChessGame {
 	private boardOffset: Actor;
 	private chessboard: Actor;
 	private checkMarker: Actor;
+	private resetButton: Actor;
 	private assets: AssetContainer;
 	private preloads: { [id: string]: Asset[] } = {};
-	private resetButton: Actor;
 
 	constructor(private context: Context, private baseUrl: string) {
 		this.assets = new AssetContainer(this.context);
@@ -191,14 +191,14 @@ export default class ChessGame {
 		this.game.on('check', (attack: Attack) => this.onCheck(attack));
 		this.loadActorsAndEvents();
 	}
-	
+
 	private async loadActorsAndEvents() {
 		if (this.sceneRoot) {
 			//destroy scene root to avoid duplicating assets
 			this.sceneRoot.destroy();
 		}
 		await this.preloadAllModels();
-		
+
 		// Create all the actors.
 		await Promise.all([
 			this.createRootObject(),
@@ -215,7 +215,7 @@ export default class ChessGame {
 		// scene. It simplifies handler code if we can assume that the actors are loaded.
 		this.addEventHandlers();
 	}
-	
+
 	private createRootObject() {
 		// Create a root actor everything gets parented to. Offset from origin so the chess board
 		// is centered on it.
@@ -349,7 +349,7 @@ export default class ChessGame {
 	private createJoinButtons() {
 
 	}
-	
+
 	private createResetButton() {
 		const position = new Vector3();
 		position.copy(this.boardOffset.transform.local.position)
@@ -367,7 +367,7 @@ export default class ChessGame {
 		this.resetButton = actor;
 		return actor.created();
 	}
-	
+
 	private addEventHandlers() {
 		const status = this.game.getStatus();
 		// Add input handlers to chess pieces.
@@ -382,14 +382,14 @@ export default class ChessGame {
 		});
 		this.addResetButtonEventHandlers();
 	}
-	
+
 	private addResetButtonEventHandlers() {
 		const actor = this.resetButton;
 		const button = actor.setBehavior(ButtonBehavior);
-		
+
 		button.onClick((user) => this.onResetButtonClicked(user.id, actor));
 	}
-	
+
 	private nearestSquare(position: Vector3): Square {
 		const distance = (square: Square) => Vector3.Distance(
 			new Vector3(position.x, 0, position.z),
@@ -401,7 +401,7 @@ export default class ChessGame {
 		const sorted = [...status.board.squares].sort((a, b) => distance(a) - distance(b));
 		return sorted.shift();
 	}
-	
+
 	private onResetButtonClicked(userId: Guid, actor: Actor) {
 		this.resetGame();
 	}
@@ -432,12 +432,12 @@ export default class ChessGame {
 					// Move the piece.
 					if (move.src.piece.type === 'pawn' && (destSquare.rank === 8 || destSquare.rank === 1)) {
 						//Auto promote pawn to queen
-						this.game.move(move.src,destSquare, "Q");
-						
+						this.game.move(move.src, destSquare, "Q");
+
 						const newActor = this.promoteChessPiece(userId, actor, destSquare);
 						actor = newActor;
 					} else {
-						this.game.move(move.src, destSquare);	
+						this.game.move(move.src, destSquare);
 					}
 				}
 			}
@@ -457,14 +457,14 @@ export default class ChessGame {
 			//
 		}
 	}
-	
+
 	private promoteChessPiece(userId: Guid, actor: Actor, destSquare: Square) {
 		const newPieceActor = this.createSingleChessPiece(destSquare);
 		this.addEventHandlersToSingleChessPiece(newPieceActor);
-		
+
 		return newPieceActor;
 	}
-	
+
 	private createSingleChessPiece(square: Square) {
 		const side = modelConfigs[square.piece.side.name];
 		const info = side[square.piece.type];
@@ -485,7 +485,7 @@ export default class ChessGame {
 		square.piece.actor = actor;
 		return actor;
 	}
-	
+
 	private async addEventHandlersToSingleChessPiece(actor: Actor) {
 		await Promise.resolve(actor.created());
 		// Add input handlers to chess piece
@@ -496,7 +496,7 @@ export default class ChessGame {
 		actor.onGrab('end', (user) => this.onDragEnd(user.id, actor));
 		actor.grabbable = true;
 	}
-	
+
 	private startHoverPiece(userId: Guid, actor: Actor) {
 		this.showMoveMarkers(actor);
 	}
